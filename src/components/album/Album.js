@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import { Grid, Column, Dialog, Container, Audio } from '@sencha/ext-modern';
+import { Polar } from '@sencha/ext-charts';
+
 import './Album.scss';
 
 class Album extends Component {
@@ -16,8 +18,14 @@ class Album extends Component {
                 }
             }
         });
+        this.emptyAudioFeatures = this.categories.map(category => ({ category, value: 0 }));
+        this.audioFeaturesStore = new Ext.data.Store({
+            data: this.emptyAudioFeatures
+        });
         window.Spotify[this.constructor.name] = this; // For debugging
     }
+
+    categories = ['acousticness', 'instrumentalness', 'valence', 'danceability', 'energy', 'liveness'];
     componentDidUpdate(prevProps) {
         if (this.props.album !== prevProps.album) {
             if (this.props.album) {
@@ -41,6 +49,18 @@ class Album extends Component {
             audio.setUrl(null);
             audio.disable();
         }
+        this.fetchAudioFeatures(record.data.id);
+    }
+    fetchAudioFeatures(trackId) {}
+    fetchAudioFeatures(trackId) {
+        Ext.Ajax.request({
+            url: `https://api.spotify.com/v1/audio-features/${trackId}`,
+            success: (response, opts) => {
+                const resp = Ext.decode(response.responseText);
+                const data = this.categories.map(category => ({ category, value: resp[category] }));
+                this.audioFeaturesStore.setData(data);
+            }
+        });
     }
 
     render() {
@@ -55,12 +75,11 @@ class Album extends Component {
                     this.setState({ album: false });
                     // If there is an onUnselect callback, run it.
                     this.props.onUnselect && this.props.onUnselect();
-
-                    // Reinitialize the audio player.
                     const audio = this.audio.current.cmp;
                     audio.stop();
                     audio.setUrl(null);
                     audio.disable();
+                    this.audioFeaturesStore.setData(this.emptyAudioFeatures);
                 }}
                 height={400}
                 width={700}
@@ -81,11 +100,51 @@ class Album extends Component {
                     />
                 </Grid>
 
-                <Container layout={{ type: 'vbox' }}>
+                <Container flex={1} layout={{ type: 'vbox' }}>
                     <Audio ref={this.audio} disabled={true} />
-                    <Container flex={1} cls="rightbottom">
-                        This will be the chart
-                    </Container>
+                    <Polar
+                        innerPadding={20}
+                        flex={1}
+                        store={this.audioFeaturesStore}
+                        theme="green"
+                        interactions={['rotate']}
+                        series={[
+                            {
+                                type: 'radar',
+                                angleField: 'category',
+                                radiusField: 'value',
+                                style: {
+                                    fillStyle: 'lightblue',
+                                    fillOpacity: 0.8,
+                                    strokeStyle: '#388FAD',
+                                    strokeOpacity: 0.8,
+                                    lineWidth: 1
+                                }
+                            }
+                        ]}
+                        axes={[
+                            {
+                                type: 'numeric',
+                                position: 'radial',
+                                fields: 'value',
+                                minimum: 0,
+                                maximum: 1,
+                                style: {
+                                    estStepSize: 10
+                                },
+                                grid: true
+                            },
+                            {
+                                type: 'category',
+                                position: 'angular',
+                                fields: 'category',
+                                style: {
+                                    estStepSize: 1
+                                },
+                                grid: true
+                            }
+                        ]}
+                    />
                 </Container>
             </Dialog>
         );

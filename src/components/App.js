@@ -32,7 +32,7 @@ class App extends Component {
         return (
             <Panel layout="fit">
                 <Thumbnails store={this.newReleases} onChildTap={this.onChildTap.bind(this)} />
-                <Album album={this.state.album}></Album>
+                <Album album={this.state.album} onUnselect={() => this.setState({ album: false })}></Album>{' '}
             </Panel>
         );
     }

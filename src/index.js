@@ -4,7 +4,9 @@ import './index.scss';
 import App from './components/App';
 import { launch } from '@sencha/ext-react';
 import { ExtReact } from '@sencha/ext-react';
+import authenticate from './Authenticate';
 
+authenticate();
 launch(
     <ExtReact>
         <App />

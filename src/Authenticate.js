@@ -2,6 +2,13 @@ export default function() {
     let token = window.location.hash.substr(1);
     if (token) {
         const o = Object.fromEntries(new URLSearchParams(token));
+        Ext.Ajax.on('beforerequest', (connection, options) =>
+            Object.assign(options, {
+                headers: { Authorization: `Bearer ${o.access_token}` },
+                useDefaultXhrHeader: false
+            })
+        );
+        Ext.Ajax.on('requestexception', (connection, options) => redirectToSpotifyAuthentication());
         return o.access_token;
     } else {
         // If there is no token, redirect to Spotify authorization
